@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Record Drift — Global Album Roulette &amp; Musical Cartography</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- HEADER -->
+    <header class="top-header">
+      <div class="brand-group">
+        <div class="brand-emblem" aria-hidden="true">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+            <circle cx="18" cy="18" r="16" stroke="#d4af37" stroke-width="1.5" />
+            <ellipse cx="18" cy="18" rx="7" ry="16" stroke="#38bdf8" stroke-width="1.1" stroke-dasharray="2 2" />
+            <line x1="2" y1="18" x2="34" y2="18" stroke="#38bdf8" stroke-width="1.1" />
+            <circle cx="18" cy="18" r="3" fill="#d4af37" />
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title-row">
+            <h1>RECORD DRIFT</h1>
+            <span class="domain-pill">recorddrift.com</span>
+          </div>
+          <p class="brand-subtitle">Global Album Roulette &amp; Musical Cartography</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="audioToggleBtn" class="icon-btn" title="Toggle Web Audio Needle Effects" aria-pressed="true">
+          <span id="audioIcon">🔊</span>
+          <span class="btn-label">Audio: ON</span>
+        </button>
+        <button id="openCratesBtn" class="crates-btn">
+          <span>📦 My Crates</span>
+          <span id="crateBadge" class="badge">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- SECTION 1: FILTERS (TOP) -->
+    <section class="panel filters-panel" aria-label="Discovery Filters">
+      <div class="panel-header">
+        <div>
+          <h2>1. Cartographic &amp; Crate Filters</h2>
+          <p class="panel-hint">Narrow your coordinates or leave open to drift worldwide</p>
+        </div>
+        <div class="match-status">
+          <span id="matchCounter" class="match-pill">0 Matching Records</span>
+          <button id="resetFiltersBtn" class="text-btn">Reset All</button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="countryLetterSelect">Country First Letter</label>
+          <select id="countryLetterSelect">
+            <option value="ALL">All Letters (A–Z)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="artistLetterSelect">Artist First Letter</label>
+          <select id="artistLetterSelect">
+            <option value="ALL">All Artists (A–Z)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="regionSelect">Continental Zone</label>
+          <select id="regionSelect">
+            <option value="ALL">All Zones</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="decadeSelect">Release Decade</label>
+          <select id="decadeSelect">
+            <option value="ALL">All Decades</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="genreSelect">Genre / Style</label>
+          <select id="genreSelect">
+            <option value="ALL">All Genres</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: SPINNING GLOBE & TURNTABLE VISUALIZER (BELOW FILTERS) -->
+    <section class="panel visualizer-panel" aria-label="Spinning Globe & Turntable">
+      <div class="turntable-stage">
+        <div class="platter-wrapper" id="platterWrapper">
+          <div class="vinyl-disc" id="vinylDisc">
+            <div class="vinyl-grooves"></div>
+            <div class="globe-spindle">
+              <canvas id="globeCanvas" width="160" height="160"></canvas>
+            </div>
+          </div>
+
+          <!-- Tonearm -->
+          <div class="tonearm" id="tonearm" aria-hidden="true">
+            <div class="tonearm-pivot"></div>
+            <div class="tonearm-rod"></div>
+            <div class="tonearm-headshell"></div>
+          </div>
+        </div>
+
+        <div class="spin-controls">
+          <button id="driftBtn" class="primary-spin-btn">
+            <span class="spin-icon">🧭</span>
+            <span>DRIFT RECORD</span>
+          </button>
+          <p class="shortcut-hint">Press <kbd>Spacebar</kbd> to spin • Strict filter matching enabled</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: DISCOVERY PRESENTATION CARD -->
+    <section class="panel result-panel" aria-label="Selected Record">
+      <!-- Empty / Initial State -->
+      <div id="emptyPromptState" class="state-box">
+        <div class="state-icon">🌍</div>
+        <h3>Ready to Chart Your Next Listen</h3>
+        <p>Configure your filters above or hit <strong>Drift Record</strong> to drop the needle onto an album somewhere on Earth.</p>
+      </div>
+
+      <!-- Strict Zero-Match Error Alert -->
+      <div id="noMatchAlert" class="state-box error-state hidden" role="alert">
+        <div class="state-icon">⚠️</div>
+        <h3>No Matching Records Found</h3>
+        <p>Zero records in the archive match your exact filter combination. Strict mode is active—adjust one or more filters and drift again.</p>
+        <button id="alertResetBtn" class="secondary-btn">Clear All Filters</button>
+      </div>
+
+      <!-- Album Result Card -->
+      <div id="albumCard" class="album-card hidden">
+        <div class="album-art-col">
+          <div id="albumSleeve" class="album-sleeve">
+            <div class="sleeve-rings"></div>
+            <div class="sleeve-meta">
+              <span id="sleeveYear" class="sleeve-year">1974</span>
+              <span id="sleeveFlag" class="sleeve-flag">🇲🇱</span>
+            </div>
+            <div class="sleeve-center-text">
+              <div id="sleeveArtist" class="sleeve-artist">Artist</div>
+              <div id="sleeveTitle" class="sleeve-title">Album</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="album-info-col">
+          <div class="geo-banner">
+            <span id="countryBadge" class="country-pill">🌍 Country</span>
+            <span id="coordsBadge" class="coords-pill">LAT 0.00°N • LNG 0.00°E</span>
+          </div>
+
+          <h2 id="albumTitle" class="album-title">Album Title</h2>
+          <p id="artistName" class="artist-name">Artist Name</p>
+
+          <div class="tags-row">
+            <span id="yearTag" class="meta-tag">Year</span>
+            <span id="regionTag" class="meta-tag">Region</span>
+            <span id="genreTag" class="meta-tag">Genre</span>
+          </div>
+
+          <blockquote id="fieldNotes" class="field-notes">
+            Cartographic &amp; cultural liner notes appear here.
+          </blockquote>
+
+          <div class="card-actions">
+            <button id="saveCrateBtn" class="save-btn">
+              <span>+ Add to My Crate</span>
+            </button>
+            <a id="spotifyLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link spotify">Spotify ↗</a>
+            <a id="youtubeLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link youtube">YouTube ↗</a>
+            <a id="discogsLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link discogs">Discogs ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <span>RECORD DRIFT • <a href="https://recorddrift.com" target="_blank" rel="noopener noreferrer">recorddrift.com</a></span>
+      <span>Curated Global Discography Archive</span>
+    </footer>
+  </div>
+
+  <!-- MY CRATES SLIDE-OVER DRAWER -->
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="cratesDrawer" class="crates-drawer" aria-hidden="true" aria-label="My Crates">
+    <div class="drawer-header">
+      <div>
+        <h2>📦 My Crates</h2>
+        <p class="drawer-sub">Saved expeditions &amp; listening log</p>
+      </div>
+      <button id="closeCratesBtn" class="icon-btn" aria-label="Close Drawer">✕</button>
+    </div>
+
+    <div class="drawer-toolbar">
+      <select id="crateFilterSelect" aria-label="Filter Crate">
+        <option value="ALL">All Saved Records</option>
+        <option value="want">Want to Listen</option>
+        <option value="listened">Listened</option>
+      </select>
+      <button id="exportLogBtn" class="secondary-btn">⬇ Export .TXT</button>
+    </div>
+
+    <div id="cratesList" class="crates-list">
+      <!-- Populated via JS -->
+    </div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
