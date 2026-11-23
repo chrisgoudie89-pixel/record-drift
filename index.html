@@ -3,263 +3,155 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Record Drift — Live Global Album Roulette &amp; Musical Cartography</title>
+
+  <!-- Primary SEO Meta Tags -->
+  <title>Record Drift — Discover Music by Country, Decade &amp; Genre</title>
+  <meta name="title" content="Record Drift — Discover Music by Country, Decade &amp; Genre" />
+  <meta name="description" content="Spin an interactive 3D globe to discover real albums and local artists from any country, decade, and genre. Explore global music scenes with Record Drift." />
+  <link rel="canonical" href="https://recorddrift.com/" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph / Facebook / Discord / WhatsApp Preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://recorddrift.com/" />
+  <meta property="og:site_name" content="Record Drift" />
+  <meta property="og:title" content="Record Drift — Discover Music by Country, Decade &amp; Genre" />
+  <meta property="og:description" content="Spin an interactive 3D globe to discover real albums and local artists from any country, decade, and genre." />
+  <meta property="og:image" content="https://recorddrift.com/preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter / X Card Preview -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://recorddrift.com/" />
+  <meta name="twitter:title" content="Record Drift — Discover Music by Country, Decade &amp; Genre" />
+  <meta name="twitter:description" content="Spin an interactive 3D globe to discover real albums and local artists from any country, decade, and genre." />
+  <meta name="twitter:image" content="https://recorddrift.com/preview.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <!-- HEADER -->
-    <header class="top-header">
-      <div class="brand-group">
-        <div class="brand-emblem" aria-hidden="true">
-          <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
-            <circle cx="18" cy="18" r="16" stroke="#d4af37" stroke-width="1.5" />
-            <ellipse cx="18" cy="18" rx="7" ry="16" stroke="#38bdf8" stroke-width="1.1" stroke-dasharray="2 2" />
-            <line x1="2" y1="18" x2="34" y2="18" stroke="#38bdf8" stroke-width="1.1" />
-            <circle cx="18" cy="18" r="3" fill="#d4af37" />
-          </svg>
-        </div>
-        <div>
-          <div class="brand-title-row">
-            <h1>RECORD DRIFT</h1>
-            <span class="domain-pill">recorddrift.com</span>
-            <span class="live-badge" title="Connected to Live MusicBrainz & Cover Art Archive">● LIVE API</span>
-          </div>
-          <p class="brand-subtitle">Live Global Album Roulette &amp; Musical Cartography</p>
-        </div>
+  <div id="globe-container"></div>
+
+  <!-- Top Header -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <span class="vinyl-ring"></span>
       </div>
-
-      <div class="header-actions">
-        <button id="audioToggleBtn" class="icon-btn" title="Toggle Web Audio Needle Effects" aria-pressed="true">
-          <span id="audioIcon">🔊</span>
-          <span class="btn-label">Audio: ON</span>
-        </button>
-        <button id="openCratesBtn" class="crates-btn">
-          <span>📦 My Crates</span>
-          <span id="crateBadge" class="badge">0</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- SECTION 1: FILTERS (TOP) -->
-    <section class="panel filters-panel" aria-label="Discovery Filters">
-      <div class="panel-header">
-        <div>
-          <h2>1. Live Cartographic &amp; Crate Filters</h2>
-          <p class="panel-hint">Queries millions of real global album releases via MusicBrainz</p>
-        </div>
-        <div class="match-status">
-          <span id="matchCounter" class="match-pill">Live Archive Ready</span>
-          <button id="resetFiltersBtn" class="text-btn">Reset All</button>
-        </div>
-      </div>
-
-      <div class="filters-grid">
-        <div class="filter-group">
-          <label for="countryLetterSelect">Country First Letter</label>
-          <select id="countryLetterSelect">
-            <option value="ALL">All Letters (A–Z)</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="countrySelect">Specific Country</label>
-          <select id="countrySelect">
-            <option value="ALL">Any Country in Filter</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="artistLetterSelect">Artist First Letter</label>
-          <select id="artistLetterSelect">
-            <option value="ALL">All Artists (A–Z)</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="regionSelect">Continental Zone</label>
-          <select id="regionSelect">
-            <option value="ALL">All Zones</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="decadeSelect">Release Decade</label>
-          <select id="decadeSelect">
-            <option value="ALL">All Decades</option>
-            <option value="1950s">1950s</option>
-            <option value="1960s">1960s</option>
-            <option value="1970s">1970s</option>
-            <option value="1980s">1980s</option>
-            <option value="1990s">1990s</option>
-            <option value="2000s">2000s</option>
-            <option value="2010s">2010s</option>
-            <option value="2020s">2020s</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="genreSelect">Genre / Tag</label>
-          <select id="genreSelect">
-            <option value="ALL">All Genres</option>
-            <option value="rock">Rock</option>
-            <option value="jazz">Jazz</option>
-            <option value="folk">Folk / Traditional</option>
-            <option value="electronic">Electronic</option>
-            <option value="hip hop">Hip Hop</option>
-            <option value="funk">Funk / Soul</option>
-            <option value="reggae">Reggae / Dub</option>
-            <option value="blues">Blues</option>
-            <option value="metal">Metal</option>
-            <option value="pop">Pop</option>
-            <option value="punk">Punk</option>
-            <option value="classical">Classical</option>
-            <option value="ambient">Ambient</option>
-            <option value="latin">Latin</option>
-            <option value="afrobeat">Afrobeat</option>
-          </select>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: SPINNING GLOBE & TURNTABLE VISUALIZER (BELOW FILTERS) -->
-    <section class="panel visualizer-panel" aria-label="Spinning Globe & Turntable">
-      <div class="turntable-stage">
-        <div class="platter-wrapper" id="platterWrapper">
-          <div class="vinyl-disc" id="vinylDisc">
-            <div class="vinyl-grooves"></div>
-            <div class="globe-spindle">
-              <canvas id="globeCanvas" width="160" height="160"></canvas>
-            </div>
-          </div>
-
-          <!-- Tonearm -->
-          <div class="tonearm" id="tonearm" aria-hidden="true">
-            <div class="tonearm-pivot"></div>
-            <div class="tonearm-rod"></div>
-            <div class="tonearm-headshell"></div>
-          </div>
-        </div>
-
-        <div class="spin-controls">
-          <button id="driftBtn" class="primary-spin-btn">
-            <span class="spin-icon">🧭</span>
-            <span id="driftBtnLabel">DRIFT RECORD</span>
-          </button>
-          <p class="shortcut-hint">Press <kbd>Spacebar</kbd> to spin • Live MusicBrainz &amp; Cover Art Archive feed</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 3: DISCOVERY PRESENTATION CARD -->
-    <section class="panel result-panel" aria-label="Selected Record">
-      <!-- Empty / Initial State -->
-      <div id="emptyPromptState" class="state-box">
-        <div class="state-icon">🌍</div>
-        <h3>Ready to Chart Your Next Listen</h3>
-        <p>Configure your filters above or hit <strong>Drift Record</strong> to query the live MusicBrainz global catalog and drop the needle onto a real release.</p>
-      </div>
-
-      <!-- Loading State -->
-      <div id="loadingState" class="state-box hidden" aria-live="polite">
-        <div class="spinner-ring"></div>
-        <h3 id="loadingTitle">Scanning Global Coordinates...</h3>
-        <p id="loadingSub">Querying MusicBrainz live archive for matching albums</p>
-      </div>
-
-      <!-- Strict Zero-Match Error Alert -->
-      <div id="noMatchAlert" class="state-box error-state hidden" role="alert">
-        <div class="state-icon">⚠️</div>
-        <h3 id="alertHeading">No Matching Records Found</h3>
-        <p id="alertMessage">Zero albums in the live archive matched your exact filter combination. Strict mode is active—adjust one or more filters and drift again.</p>
-        <button id="alertResetBtn" class="secondary-btn">Clear All Filters</button>
-      </div>
-
-      <!-- Album Result Card -->
-      <div id="albumCard" class="album-card hidden">
-        <div class="album-art-col">
-          <div id="albumSleeve" class="album-sleeve">
-            <img id="coverArtImg" class="cover-art-img hidden" alt="Album Cover Art" />
-            <div class="sleeve-rings"></div>
-            <div class="sleeve-meta">
-              <span id="sleeveYear" class="sleeve-year">1974</span>
-              <span id="sleeveFlag" class="sleeve-flag">🌍</span>
-            </div>
-            <div class="sleeve-center-text">
-              <div id="sleeveArtist" class="sleeve-artist">Artist</div>
-              <div id="sleeveTitle" class="sleeve-title">Album</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="album-info-col">
-          <div class="geo-banner">
-            <span id="countryBadge" class="country-pill">🌍 Country</span>
-            <span id="coordsBadge" class="coords-pill">LAT 0.00°N • LNG 0.00°E</span>
-            <span id="archiveTotalBadge" class="archive-pill">Archive Pool: —</span>
-          </div>
-
-          <h2 id="albumTitle" class="album-title">Album Title</h2>
-          <p id="artistName" class="artist-name">Artist Name</p>
-
-          <div class="tags-row">
-            <span id="yearTag" class="meta-tag">Year</span>
-            <span id="regionTag" class="meta-tag">Region</span>
-            <span id="genreTag" class="meta-tag">Genre</span>
-          </div>
-
-          <blockquote id="fieldNotes" class="field-notes">
-            Live release metadata and geographic origin details.
-          </blockquote>
-
-          <div class="card-actions">
-            <button id="saveCrateBtn" class="save-btn">
-              <span>+ Add to My Crate</span>
-            </button>
-            <a id="spotifyLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link spotify">Spotify ↗</a>
-            <a id="youtubeLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link youtube">YouTube ↗</a>
-            <a id="discogsLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link discogs">Discogs ↗</a>
-            <a id="mbLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link mb">MusicBrainz ↗</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="app-footer">
-      <span>RECORD DRIFT • <a href="https://recorddrift.com" target="_blank" rel="noopener noreferrer">recorddrift.com</a></span>
-      <span>Powered by MusicBrainz &amp; Cover Art Archive Live APIs</span>
-    </footer>
-  </div>
-
-  <!-- MY CRATES SLIDE-OVER DRAWER -->
-  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="cratesDrawer" class="crates-drawer" aria-hidden="true" aria-label="My Crates">
-    <div class="drawer-header">
       <div>
-        <h2>📦 My Crates</h2>
-        <p class="drawer-sub">Saved expeditions &amp; listening log</p>
+        <div class="brand-title-row">
+          <h1>RECORD DRIFT</h1>
+          <span id="api-status-badge" class="status-badge live" title="Connected to live MusicBrainz database">● LIVE API</span>
+        </div>
+        <p class="subtitle">Spin the globe · Filter by country, decade &amp; genre</p>
       </div>
-      <button id="closeCratesBtn" class="icon-btn" aria-label="Close Drawer">✕</button>
     </div>
 
-    <div class="drawer-toolbar">
-      <select id="crateFilterSelect" aria-label="Filter Crate">
-        <option value="ALL">All Saved Records</option>
-        <option value="want">Want to Listen</option>
-        <option value="listened">Listened</option>
+    <div class="header-actions">
+      <button id="random-country-btn" class="btn btn-secondary" title="Pick a random country">
+        🎲 Random Country
+      </button>
+      <button id="drift-btn" class="btn btn-primary">
+        🎧 Drift Record
+      </button>
+    </div>
+  </header>
+
+  <!-- Filter Control Panel -->
+  <aside class="control-panel" aria-label="Music discovery filters">
+    <div class="control-group">
+      <label for="country-select">Country / Region</label>
+      <select id="country-select">
+        <option value="ALL">🌍 Any Country (Global)</option>
       </select>
-      <button id="exportLogBtn" class="secondary-btn">⬇ Export .TXT</button>
     </div>
 
-    <div id="cratesList" class="crates-list">
-      <!-- Populated via JS -->
+    <div class="control-group">
+      <label for="decade-select">Decade</label>
+      <select id="decade-select">
+        <option value="ALL">All Decades</option>
+        <option value="1960s">1960s</option>
+        <option value="1970s">1970s</option>
+        <option value="1980s">1980s</option>
+        <option value="1990s">1990s</option>
+        <option value="2000s">2000s</option>
+        <option value="2010s">2010s</option>
+        <option value="2020s">2020s</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="genre-select">Genre</label>
+      <select id="genre-select">
+        <option value="ALL">All Genres</option>
+      </select>
+    </div>
+
+    <div class="filter-footer">
+      <span id="match-count">Loading catalog...</span>
+      <button id="reset-filters-btn" class="link-btn">Reset</button>
     </div>
   </aside>
 
+  <!-- Selected Album Card -->
+  <section id="album-card" class="album-card hidden" aria-live="polite">
+    <button id="close-card-btn" class="close-btn" aria-label="Close album details">✕</button>
+
+    <div class="album-card-header">
+      <div class="album-cover-wrap">
+        <img id="album-cover" src="" alt="Album cover art" />
+        <div id="album-cover-fallback" class="cover-fallback hidden">
+          <span class="vinyl-disc"></span>
+        </div>
+      </div>
+
+      <div class="album-meta">
+        <div class="badges">
+          <span id="album-country-badge" class="badge badge-country">Country</span>
+          <span id="album-year-badge" class="badge badge-year">Year</span>
+          <span id="album-genre-badge" class="badge badge-genre">Genre</span>
+        </div>
+        <h2 id="album-title">Album Title</h2>
+        <p id="album-artist" class="artist-name">Artist Name</p>
+      </div>
+    </div>
+
+    <p id="album-description" class="album-description"></p>
+
+    <div class="album-links">
+      <a id="listen-youtube" href="#" target="_blank" rel="noopener noreferrer" class="stream-btn yt">
+        ▶ YouTube
+      </a>
+      <a id="listen-spotify" href="#" target="_blank" rel="noopener noreferrer" class="stream-btn sp">
+        ● Spotify
+      </a>
+      <a id="listen-mb" href="#" target="_blank" rel="noopener noreferrer" class="stream-btn mb">
+        ↗ MusicBrainz
+      </a>
+    </div>
+
+    <div class="card-actions">
+      <button id="next-match-btn" class="btn btn-primary full-width">
+        ↻ Another Record From This Filter
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading / Toast Notification -->
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <!-- Globe Interaction Hint -->
+  <div class="globe-hint">
+    Drag to spin · Scroll to zoom · Click any glowing pin
+  </div>
+
+  <!-- Three.js & Globe.gl -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
