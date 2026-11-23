@@ -1,71 +1,52 @@
-# Record Drift (`recorddrift.com`)
+# Record Drift (`recorddrift.com`) — Live API Edition
 
-**Record Drift** is a zero-dependency, static single-page web application for global music discovery. It pairs an interactive spinning vinyl turntable and wireframe cartographic globe with strict multi-dimensional filtering, Web Audio needle effects, and persistent local crate storage.
+**Record Drift** is a zero-dependency web application for global music discovery powered live by the **MusicBrainz API** and **Cover Art Archive**. Instead of a fixed local list, every spin queries millions of real official album releases across 70+ countries in real time.
 
 ---
 
 ## Project Structure
 
 ```text
-record-drift/
-├── index.html   # Semantic markup, layout hierarchy, and drawer structure
-├── styles.css   # Responsive dark cartographic theme, vinyl & tonearm animations
-├── app.js       # Curated discography, strict filter logic, canvas globe, crate storage
-└── README.md    # Setup and deployment instructions
+record-drift-live/
+├── index.html   # Semantic markup, layout hierarchy, and crate drawer
+├── styles.css   # Midnight cartographic theme, vinyl & tonearm animations
+├── app.js       # Live MusicBrainz & Cover Art Archive integration, strict filters
+└── README.md    # Setup, API notes, and deployment instructions
 ```
+
+---
+
+## How Live Discovery Works
+
+1. **Country & Region Filtering**: Select a **Country First Letter**, **Continental Zone**, or lock onto a **Specific Country** (73 countries indexed with geographic coordinates).
+2. **Deep Catalog Querying**: When you click **Drift Record** (or press `Spacebar`), `app.js` constructs a live Lucene query against `https://musicbrainz.org/ws/2/release-group/` filtering by:
+   - Official album primary type (`primarytype:album AND status:official`)
+   - Country ISO code (`country:ML`, `country:CD`, `country:JP`, etc.)
+   - Optional Artist First Letter, Release Decade, and Genre tag
+3. **Genuine Cover Art**: Automatically fetches official album cover thumbnails from `https://coverartarchive.org/`, falling back cleanly to a bespoke procedural vinyl sleeve if a release lacks scanned artwork.
+4. **Strict Match Enforcement**: If a narrow combination (e.g., *1950s Afrobeat in Iceland*) yields `0` live releases, the turntable halts cleanly and displays a red alert prompting you to adjust your filters.
 
 ---
 
 ## Local Setup Instructions
 
-Because **Record Drift** uses pure HTML5, CSS3, and vanilla ES6+ JavaScript with zero build steps or external package dependencies, you can run it immediately in any modern browser.
+### Option 1: Direct File Launch
+1. Extract `record-drift-live.zip` into a folder.
+2. Double-click `index.html` to open it in any modern browser with an active internet connection.
 
-### Option 1: Direct File Launch (Fastest)
-1. Unzip the downloaded `record-drift.zip` archive into a folder on your computer.
-2. Double-click `index.html` to open it directly in Chrome, Firefox, Edge, or Safari.
-3. Ensure `index.html`, `styles.css`, and `app.js` remain in the **same directory** so the stylesheet and script load properly.
+### Option 2: Local HTTP Server (Recommended)
+```bash
+cd record-drift-live
+python3 -m http.server 8080
+```
+Open `http://localhost:8080` in your browser.
 
-### Option 2: Local Development Server (Recommended)
-Running via a local HTTP server ensures clean `localStorage` isolation and Web Audio playback:
+---
 
-* **Using Python 3:**
-  ```bash
-  cd record-drift
-  python3 -m http.server 8080
-  ```
-  Then visit `http://localhost:8080` in your browser.
-
-* **Using VS Code:**
-  Open the `record-drift` folder in Visual Studio Code and click **Go Live** using the *Live Server* extension.
+## API Rate-Limit Note
+MusicBrainz allows anonymous browser requests at roughly **1 request per second**. Avoid rapid-fire clicking within the same second so your IP is never temporarily throttled.
 
 ---
 
 ## Deploying to `recorddrift.com`
-
-You can host these three static files (`index.html`, `styles.css`, `app.js`) for free on any static web host:
-
-1. **Netlify Drop:** Drag and drop the `record-drift` folder onto [app.netlify.com/drop](https://app.netlify.com/drop), then attach your custom domain (`recorddrift.com`) under **Domain Management**.
-2. **Cloudflare Pages / GitHub Pages / Vercel:** Push the folder to a repository and point your root directory to `/`. No build command is required.
-
----
-
-## Customizing the Discography Database
-
-Open `app.js` and locate the `ALBUM_DATABASE` array at the top of the file. Add new entries following this schema:
-
-```javascript
-{
-  id: "unique-slug-year",
-  title: "Album Name",
-  artist: "Artist or Band",
-  country: "Country Name",
-  flag: "🇺🇳",
-  region: "Europe", // Africa, Asia, Europe, North America, South America, Oceania
-  year: 1978,
-  decade: "1970s",
-  genre: "Genre Label",
-  coords: "LAT 00.00°N • LNG 00.00°E",
-  palette: ["#1e293b", "#0f172a"], // Two hex colors for the procedural sleeve gradient
-  notes: "Short historical or musical liner note."
-}
-```
+Upload `index.html`, `styles.css`, and `app.js` to **Netlify Drop**, **Cloudflare Pages**, **GitHub Pages**, or **Vercel** and point your `recorddrift.com` DNS records to the deployment.
