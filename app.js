@@ -1,5 +1,5 @@
 // Record Drift (recorddrift.com) — Live MusicBrainz & Cover Art Archive Edition
-// Full Global Edition: All 195 Nations + Low-Request Rate-Limit Shield + Session Recent Spins
+// CORS-Safe Browser Fetch (no custom headers triggering preflight OPTIONS blocks) + 196 Countries
 
 const COUNTRIES = [
   { code: "AF", name: "Afghanistan", region: "Asia", coords: "LAT 34.55°N • LNG 69.20°E" },
@@ -226,7 +226,6 @@ let globeAngle = 0;
 let globeSpeed = 0.012;
 let lastApiCallTimestamp = 0;
 
-// Two-tier in-memory caches so repeat clicks and artists never spam MusicBrainz
 const artistListCache = new Map();
 const artistAlbumsCache = new Map();
 let recentSpins = [];
@@ -490,7 +489,8 @@ function renderGlobeLoop() {
   requestAnimationFrame(renderGlobeLoop);
 }
 
-// Polite rate-limited fetch with 1.5s spacing + automatic exponential backoff on 503/429
+// CORS-safe fetch: Uses ONLY simple CORS headers (Accept: application/json) so browsers
+// never fire a preflight OPTIONS request that MusicBrainz rejects with a CORS block!
 async function politeMusicBrainzFetch(url, attempt = 0) {
   const minGap = 1500;
   const now = Date.now();
@@ -502,8 +502,7 @@ async function politeMusicBrainzFetch(url, attempt = 0) {
 
   const response = await fetch(url, {
     headers: {
-      "Accept": "application/json",
-      "Api-User-Agent": "RecordDrift/1.0 (https://recorddrift.com)"
+      "Accept": "application/json"
     }
   });
 
@@ -546,7 +545,6 @@ async function loadAudioPreview(artist, albumTitle) {
   } catch (e) {}
 }
 
-// Optimized: Max 2 API requests per spin (1 artist search + 1 release-group lookup), with full caching
 async function fetchAlbumsByArtistOrigin(countryObj) {
   const aLetter = artistLetterSelect.value;
   const decade = decadeSelect.value;
