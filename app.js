@@ -96,7 +96,6 @@ function countryCodeToFlag(code) {
   return String.fromCodePoint(...[...upper].map(c => 127397 + c.charCodeAt(0)));
 }
 
-// State & Smart Cache
 let currentRecord = null;
 let isSpinning = false;
 let audioEnabled = true;
@@ -106,7 +105,6 @@ let lastApiCallTimestamp = 0;
 const queryCache = new Map();
 let savedCrates = JSON.parse(localStorage.getItem("recordDriftCrates") || "[]");
 
-// DOM Elements
 const countryLetterSelect = document.getElementById("countryLetterSelect");
 const countrySelect = document.getElementById("countrySelect");
 const artistLetterSelect = document.getElementById("artistLetterSelect");
@@ -153,19 +151,20 @@ const cratesList = document.getElementById("cratesList");
 const saveCrateBtn = document.getElementById("saveCrateBtn");
 const shareRecordBtn = document.getElementById("shareRecordBtn");
 
-// Smoothly brings the results panel into view so results are never hidden off-screen
-function revealResultsPanel() {
+function revealResultsPanel(targetEl = resultsSection) {
   if (!resultsSection) return;
   resultsSection.classList.remove("highlight-pulse");
-  void resultsSection.offsetWidth; // trigger reflow so animation replays
+  void resultsSection.offsetWidth;
   resultsSection.classList.add("highlight-pulse");
 
-  setTimeout(() => {
-    resultsSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, 60);
+  const scrollTarget = targetEl || resultsSection;
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      scrollTarget.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  });
 }
 
-// URL Query Parameter Sync (for shareable links)
 function syncUrlParams() {
   const params = new URLSearchParams();
   if (regionSelect.value !== "ALL") params.set("region", regionSelect.value);
@@ -217,13 +216,11 @@ function applyUrlParamsOnLoad() {
 
   updateEligibilityStatus();
 
-  // If user opened a shared link with specific filters, automatically spin on load!
   if (hasFilters) {
     setTimeout(() => triggerDrift(), 250);
   }
 }
 
-// Initialize Filter Dropdowns
 function initFilters() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   letters.forEach(letter => {
@@ -298,7 +295,6 @@ function updateEligibilityStatus() {
   syncUrlParams();
 }
 
-// Web Audio API Needle Drop Sound
 function playNeedleSound(type = "drop") {
   if (!audioEnabled) return;
   try {
@@ -325,12 +321,9 @@ function playNeedleSound(type = "drop") {
     gain.connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + 0.28);
-  } catch (e) {
-    // Audio blocked or unsupported
-  }
+  } catch (e) {}
 }
 
-// Spinning Wireframe Canvas Globe
 function renderGlobeLoop() {
   const w = globeCanvas.width;
   const h = globeCanvas.height;
@@ -378,7 +371,6 @@ function renderGlobeLoop() {
   requestAnimationFrame(renderGlobeLoop);
 }
 
-// Polite rate-limited fetch helper
 async function politeMusicBrainzFetch(url) {
   const now = Date.now();
   const elapsed = now - lastApiCallTimestamp;
@@ -409,7 +401,6 @@ async function politeMusicBrainzFetch(url) {
   return response.json();
 }
 
-// Fetch 30-second audio preview from iTunes public Search API (no API key required)
 async function loadAudioPreview(artist, albumTitle) {
   previewAudioEl.pause();
   previewAudioEl.src = "";
@@ -430,12 +421,9 @@ async function loadAudioPreview(artist, albumTitle) {
       previewTrackName.textContent = `Preview: "${match.trackName}"`;
       previewAudioBox.classList.remove("hidden");
     }
-  } catch (e) {
-    // Silent fallback if iTunes preview isn't available for obscure releases
-  }
+  } catch (e) {}
 }
 
-// Step 1: Fetch official artists FROM the target country
 async function fetchAlbumsByArtistOrigin(countryObj) {
   const aLetter = artistLetterSelect.value;
   const decade = decadeSelect.value;
@@ -520,7 +508,6 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
   return resultPayload;
 }
 
-// Live Drift Execution (Strict Filter Mode)
 async function triggerDrift() {
   if (isSpinning) return;
 
@@ -544,7 +531,6 @@ async function triggerDrift() {
   albumCard.classList.add("hidden");
   loadingState.classList.remove("hidden");
 
-  // Scroll immediately to the deck so user sees live coordinates locking in
   revealResultsPanel();
 
   vinylDisc.classList.add("spinning");
@@ -643,7 +629,7 @@ function showStrictError(heading, message) {
   noMatchAlert.classList.remove("hidden");
   matchCounter.textContent = "0 Matching Records";
   matchCounter.classList.add("zero-matches");
-  revealResultsPanel();
+  revealResultsPanel(noMatchAlert);
 }
 
 function displayRecord(rec) {
@@ -684,7 +670,7 @@ function displayRecord(rec) {
   document.getElementById("mbLink").href = `https://musicbrainz.org/release-group/${rec.id}`;
 
   updateSaveButtonState();
-  revealResultsPanel();
+  revealResultsPanel(albumCard);
   loadAudioPreview(rec.artist, rec.title);
 }
 
@@ -698,7 +684,6 @@ function updateSaveButtonState() {
   }
 }
 
-// Crates Management
 function persistCrates() {
   localStorage.setItem("recordDriftCrates", JSON.stringify(savedCrates));
   crateBadge.textContent = savedCrates.length;
@@ -774,7 +759,8 @@ function exportListeningLog() {
     lines.push("");
   });
 
-  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+  const blob = new Blob([lines.join("
+")], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -793,7 +779,6 @@ function resetAllFilters() {
   populateCountryDropdown();
 }
 
-// Event Listeners
 countryLetterSelect.addEventListener("change", populateCountryDropdown);
 regionSelect.addEventListener("change", populateCountryDropdown);
 countrySelect.addEventListener("change", updateEligibilityStatus);
@@ -892,7 +877,6 @@ cratesList.addEventListener("change", e => {
   }
 });
 
-// Boot
 initFilters();
 persistCrates();
 renderGlobeLoop();
