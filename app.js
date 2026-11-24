@@ -1,5 +1,5 @@
 // Record Drift (recorddrift.com) — Live MusicBrainz & Cover Art Archive Edition
-// Clean Discovery Mode: Smooth Auto-Scroll to Deck, Shareable Filter Deep-Links, and 30s Audio Previews
+// Clean Discovery Mode: Smooth Auto-Scroll, Shareable Filter Deep-Links, 30s Previews, and Session Recent Spins
 
 const COUNTRIES = [
   { code: "DZ", name: "Algeria", region: "Africa", coords: "LAT 28.03°N • LNG 1.65°E" },
@@ -103,6 +103,7 @@ let globeAngle = 0;
 let globeSpeed = 0.012;
 let lastApiCallTimestamp = 0;
 const queryCache = new Map();
+let recentSpins = [];
 
 const countryLetterSelect = document.getElementById("countryLetterSelect");
 const countrySelect = document.getElementById("countrySelect");
@@ -135,6 +136,9 @@ const previewAudioBox = document.getElementById("previewAudioBox");
 const previewPlayBtn = document.getElementById("previewPlayBtn");
 const previewTrackName = document.getElementById("previewTrackName");
 const previewAudioEl = document.getElementById("previewAudioEl");
+
+const recentSpinsWrap = document.getElementById("recentSpinsWrap");
+const recentSpinsStrip = document.getElementById("recentSpinsStrip");
 
 const audioToggleBtn = document.getElementById("audioToggleBtn");
 const audioIcon = document.getElementById("audioIcon");
@@ -497,6 +501,79 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
   return resultPayload;
 }
 
+function recordSessionSpin(rec) {
+  recentSpins = recentSpins.filter(item => item.id !== rec.id);
+  recentSpins.unshift(rec);
+  if (recentSpins.length > 12) {
+    recentSpins.pop();
+  }
+  renderRecentSpins();
+}
+
+function renderRecentSpins() {
+  if (!recentSpinsWrap || !recentSpinsStrip) return;
+  if (recentSpins.length <= 1) {
+    recentSpinsWrap.classList.add("hidden");
+    return;
+  }
+
+  recentSpinsWrap.classList.remove("hidden");
+  recentSpinsStrip.innerHTML = "";
+
+  recentSpins.forEach(item => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "spin-thumb-btn" + (currentRecord && currentRecord.id === item.id ? " active" : "");
+    btn.title = `${item.title} — ${item.artist} (${item.country})`;
+
+    const art = document.createElement("div");
+    art.className = "spin-thumb-art";
+    art.style.background = `linear-gradient(135deg, ${item.palette[0]} 0%, ${item.palette[1]} 100%)`;
+
+    const img = document.createElement("img");
+    img.src = `https://coverartarchive.org/release-group/${item.id}/front-250`;
+    img.alt = "";
+    img.loading = "lazy";
+    img.onerror = () => img.remove();
+
+    const flagSpan = document.createElement("span");
+    flagSpan.className = "spin-thumb-flag";
+    flagSpan.textContent = item.flag;
+
+    const yearSpan = document.createElement("span");
+    yearSpan.className = "spin-thumb-year";
+    yearSpan.textContent = item.year;
+
+    art.appendChild(img);
+    art.appendChild(flagSpan);
+    art.appendChild(yearSpan);
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "spin-thumb-title";
+    titleDiv.textContent = item.title;
+
+    const artistDiv = document.createElement("div");
+    artistDiv.className = "spin-thumb-artist";
+    artistDiv.textContent = `${item.artist} · ${item.country}`;
+
+    btn.appendChild(art);
+    btn.appendChild(titleDiv);
+    btn.appendChild(artistDiv);
+
+    btn.addEventListener("click", () => {
+      if (isSpinning) return;
+      noMatchAlert.classList.add("hidden");
+      emptyPromptState.classList.add("hidden");
+      currentRecord = item;
+      playNeedleSound("drop");
+      displayRecord(item, false);
+      renderRecentSpins();
+    });
+
+    recentSpinsStrip.appendChild(btn);
+  });
+}
+
 async function triggerDrift() {
   if (isSpinning) return;
 
@@ -588,7 +665,7 @@ async function triggerDrift() {
     currentRecord = recordObj;
     matchCounter.textContent = `${result.totalArtists.toLocaleString()} Artists in ${targetCountry.name}`;
     matchCounter.classList.remove("zero-matches");
-    displayRecord(recordObj);
+    displayRecord(recordObj, true);
   } catch (err) {
     stopSpinner();
     showStrictError(
@@ -621,7 +698,7 @@ function showStrictError(heading, message) {
   revealResultsPanel(noMatchAlert);
 }
 
-function displayRecord(rec) {
+function displayRecord(rec, addToHistory = true) {
   albumCard.classList.remove("hidden");
 
   const sleeve = document.getElementById("albumSleeve");
@@ -657,6 +734,10 @@ function displayRecord(rec) {
   document.getElementById("youtubeLink").href = `https://www.youtube.com/results?search_query=${query}`;
   document.getElementById("discogsLink").href = `https://www.discogs.com/search/?q=${query}&type=release`;
   document.getElementById("mbLink").href = `https://musicbrainz.org/release-group/${rec.id}`;
+
+  if (addToHistory) {
+    recordSessionSpin(rec);
+  }
 
   revealResultsPanel(albumCard);
   loadAudioPreview(rec.artist, rec.title);

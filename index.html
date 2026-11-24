@@ -168,21 +168,18 @@
 
     <!-- SECTION 3: RESULT PRESENTATION CARD -->
     <section id="resultsSection" class="panel" aria-live="polite">
-      <!-- Empty Initial Prompt -->
       <div id="emptyPromptState" class="state-box">
         <div class="state-icon">🧭</div>
         <h3>Ready to Drop the Needle</h3>
         <p>Hit <strong>Drift Record</strong> above to lock onto a country, query MusicBrainz in real time, and pull an authentic studio album onto the deck.</p>
       </div>
 
-      <!-- Loading State -->
       <div id="loadingState" class="state-box hidden">
         <div class="spinner-ring"></div>
         <h3 id="loadingTitle">Locking Coordinates...</h3>
         <p id="loadingSub">Searching MusicBrainz catalog...</p>
       </div>
 
-      <!-- Strict Filter No-Match Error State -->
       <div id="noMatchAlert" class="state-box error-state hidden">
         <div class="state-icon">⚠️</div>
         <h3 id="alertHeading">No Matching Albums Found</h3>
@@ -190,7 +187,6 @@
         <button id="alertResetBtn" class="secondary-btn" style="margin-top:0.5rem;">Reset All Filters</button>
       </div>
 
-      <!-- Album Result Card -->
       <div id="albumCard" class="album-card hidden">
         <div id="albumSleeve" class="album-sleeve">
           <img id="coverArtImg" class="cover-art-img hidden" src="" alt="Album cover artwork" />
@@ -221,7 +217,6 @@
             <span id="genreTag" class="meta-tag">Genre</span>
           </div>
 
-          <!-- 30-Second Audio Preview Bar -->
           <div id="previewAudioBox" class="preview-audio-box hidden">
             <button id="previewPlayBtn" class="preview-play-btn" type="button">▶ Play 30s Preview</button>
             <span id="previewTrackName" class="preview-track-name">Sample Track</span>
@@ -240,6 +235,15 @@
             <a id="mbLink" href="#" target="_blank" rel="noopener noreferrer" class="ext-link">MusicBrainz ↗</a>
           </div>
         </div>
+      </div>
+
+      <!-- SESSION RECENT SPINS STRIP -->
+      <div id="recentSpinsWrap" class="recent-spins-wrap hidden">
+        <div class="recent-spins-header">
+          <span class="recent-spins-title">RECENT SPINS (THIS SESSION)</span>
+          <span class="recent-spins-hint">Click any sleeve to bring it back on deck</span>
+        </div>
+        <div id="recentSpinsStrip" class="recent-spins-strip" role="list"></div>
       </div>
     </section>
 
