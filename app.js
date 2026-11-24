@@ -1,5 +1,5 @@
 // Record Drift (recorddrift.com) — Live MusicBrainz & Cover Art Archive Edition
-// Fixed: Artist-origin country lookup + single-request caching (zero rate-limit blocks)
+// Upgraded: Smooth Auto-Scroll to Deck, Shareable Filter Deep-Links, and 30s Audio Previews
 
 const COUNTRIES = [
   { code: "DZ", name: "Algeria", region: "Africa", coords: "LAT 28.03°N • LNG 1.65°E" },
@@ -96,14 +96,14 @@ function countryCodeToFlag(code) {
   return String.fromCodePoint(...[...upper].map(c => 127397 + c.charCodeAt(0)));
 }
 
-// State & Smart Cache (prevents rate limits and repeats)
+// State & Smart Cache
 let currentRecord = null;
 let isSpinning = false;
 let audioEnabled = true;
 let globeAngle = 0;
 let globeSpeed = 0.012;
 let lastApiCallTimestamp = 0;
-const queryCache = new Map(); // caches 100 results per filter combo
+const queryCache = new Map();
 let savedCrates = JSON.parse(localStorage.getItem("recordDriftCrates") || "[]");
 
 // DOM Elements
@@ -124,6 +124,7 @@ const tonearm = document.getElementById("tonearm");
 const globeCanvas = document.getElementById("globeCanvas");
 const ctx = globeCanvas.getContext("2d");
 
+const resultsSection = document.getElementById("resultsSection");
 const emptyPromptState = document.getElementById("emptyPromptState");
 const loadingState = document.getElementById("loadingState");
 const loadingTitle = document.getElementById("loadingTitle");
@@ -132,6 +133,11 @@ const noMatchAlert = document.getElementById("noMatchAlert");
 const alertHeading = document.getElementById("alertHeading");
 const alertMessage = document.getElementById("alertMessage");
 const albumCard = document.getElementById("albumCard");
+
+const previewAudioBox = document.getElementById("previewAudioBox");
+const previewPlayBtn = document.getElementById("previewPlayBtn");
+const previewTrackName = document.getElementById("previewTrackName");
+const previewAudioEl = document.getElementById("previewAudioEl");
 
 const audioToggleBtn = document.getElementById("audioToggleBtn");
 const audioIcon = document.getElementById("audioIcon");
@@ -145,6 +151,77 @@ const crateFilterSelect = document.getElementById("crateFilterSelect");
 const exportLogBtn = document.getElementById("exportLogBtn");
 const cratesList = document.getElementById("cratesList");
 const saveCrateBtn = document.getElementById("saveCrateBtn");
+const shareRecordBtn = document.getElementById("shareRecordBtn");
+
+// Smoothly brings the results panel into view so results are never hidden off-screen
+function revealResultsPanel() {
+  if (!resultsSection) return;
+  resultsSection.classList.remove("highlight-pulse");
+  void resultsSection.offsetWidth; // trigger reflow so animation replays
+  resultsSection.classList.add("highlight-pulse");
+
+  setTimeout(() => {
+    resultsSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, 60);
+}
+
+// URL Query Parameter Sync (for shareable links)
+function syncUrlParams() {
+  const params = new URLSearchParams();
+  if (regionSelect.value !== "ALL") params.set("region", regionSelect.value);
+  if (countryLetterSelect.value !== "ALL") params.set("cletter", countryLetterSelect.value);
+  if (countrySelect.value !== "ALL") params.set("country", countrySelect.value);
+  if (artistLetterSelect.value !== "ALL") params.set("aletter", artistLetterSelect.value);
+  if (decadeSelect.value !== "ALL") params.set("decade", decadeSelect.value);
+  if (genreSelect.value !== "ALL") params.set("genre", genreSelect.value);
+
+  const queryString = params.toString();
+  const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+  window.history.replaceState({}, "", newUrl);
+}
+
+function applyUrlParamsOnLoad() {
+  const params = new URLSearchParams(window.location.search);
+  let hasFilters = false;
+
+  if (params.has("region")) {
+    regionSelect.value = params.get("region");
+    hasFilters = true;
+  }
+  if (params.has("cletter")) {
+    countryLetterSelect.value = params.get("cletter").toUpperCase();
+    hasFilters = true;
+  }
+
+  populateCountryDropdown();
+
+  if (params.has("country")) {
+    const cCode = params.get("country").toUpperCase();
+    if ([...countrySelect.options].some(opt => opt.value === cCode)) {
+      countrySelect.value = cCode;
+      hasFilters = true;
+    }
+  }
+  if (params.has("aletter")) {
+    artistLetterSelect.value = params.get("aletter").toUpperCase();
+    hasFilters = true;
+  }
+  if (params.has("decade")) {
+    decadeSelect.value = params.get("decade");
+    hasFilters = true;
+  }
+  if (params.has("genre")) {
+    genreSelect.value = params.get("genre");
+    hasFilters = true;
+  }
+
+  updateEligibilityStatus();
+
+  // If user opened a shared link with specific filters, automatically spin on load!
+  if (hasFilters) {
+    setTimeout(() => triggerDrift(), 250);
+  }
+}
 
 // Initialize Filter Dropdowns
 function initFilters() {
@@ -218,6 +295,7 @@ function updateEligibilityStatus() {
     matchCounter.textContent = `${eligible.length} Countries • Live API Pool`;
     matchCounter.classList.remove("zero-matches");
   }
+  syncUrlParams();
 }
 
 // Web Audio API Needle Drop Sound
@@ -300,7 +378,7 @@ function renderGlobeLoop() {
   requestAnimationFrame(renderGlobeLoop);
 }
 
-// Polite rate-limited fetch helper (ensures >= 1100ms between MusicBrainz calls)
+// Polite rate-limited fetch helper
 async function politeMusicBrainzFetch(url) {
   const now = Date.now();
   const elapsed = now - lastApiCallTimestamp;
@@ -310,19 +388,14 @@ async function politeMusicBrainzFetch(url) {
   lastApiCallTimestamp = Date.now();
 
   const response = await fetch(url, {
-    headers: {
-      "Accept": "application/json"
-    }
+    headers: { "Accept": "application/json" }
   });
 
   if (response.status === 503 || response.status === 429) {
-    // Wait 1.6s and retry once automatically
     await new Promise(resolve => setTimeout(resolve, 1600));
     lastApiCallTimestamp = Date.now();
     const retryResp = await fetch(url, {
-      headers: {
-        "Accept": "application/json"
-      }
+      headers: { "Accept": "application/json" }
     });
     if (!retryResp.ok) {
       throw new Error(`MusicBrainz HTTP ${retryResp.status}`);
@@ -336,10 +409,33 @@ async function politeMusicBrainzFetch(url) {
   return response.json();
 }
 
-// Step 1: Fetch official artists FROM the target country (using /ws/2/artist/)
-// Note: MusicBrainz release-group index does NOT have a 'country' field, so searching
-// country:JP on release-group matched the word "JP" in titles! Searching /ws/2/artist/
-// by country:JP finds genuine artists from Japan, and we then browse their albums.
+// Fetch 30-second audio preview from iTunes public Search API (no API key required)
+async function loadAudioPreview(artist, albumTitle) {
+  previewAudioEl.pause();
+  previewAudioEl.src = "";
+  previewAudioBox.classList.add("hidden");
+  previewPlayBtn.textContent = "▶ Play 30s Preview";
+
+  try {
+    const term = encodeURIComponent(`${artist} ${albumTitle}`);
+    const resp = await fetch(`https://itunes.apple.com/search?term=${term}&media=music&entity=song&limit=5`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const match = (data.results || []).find(
+      track => track.previewUrl && track.artistName && track.artistName.toLowerCase().includes(artist.toLowerCase().slice(0, 6))
+    ) || (data.results || []).find(track => track.previewUrl);
+
+    if (match && match.previewUrl) {
+      previewAudioEl.src = match.previewUrl;
+      previewTrackName.textContent = `Preview: "${match.trackName}"`;
+      previewAudioBox.classList.remove("hidden");
+    }
+  } catch (e) {
+    // Silent fallback if iTunes preview isn't available for obscure releases
+  }
+}
+
+// Step 1: Fetch official artists FROM the target country
 async function fetchAlbumsByArtistOrigin(countryObj) {
   const aLetter = artistLetterSelect.value;
   const decade = decadeSelect.value;
@@ -353,7 +449,6 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
     }
   }
 
-  // Build artist query for genuine country of origin
   const artistQueryParts = [`country:${countryObj.code}`];
   if (aLetter !== "ALL") {
     artistQueryParts.push(`artist:${aLetter.toLowerCase()}*`);
@@ -375,7 +470,6 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
     return { totalArtists: 0, albums: [] };
   }
 
-  // Shuffle artists and check up to 4 artists until we find official albums matching decade/genre
   const shuffledArtists = [...artists].sort(() => Math.random() - 0.5).slice(0, 4);
   let collectedAlbums = [];
 
@@ -385,7 +479,6 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
     const rgs = rgData["release-groups"] || [];
 
     const matchingRgs = rgs.filter(rg => {
-      // Exclude compilations/live/remix secondary types if desired, keep studio albums
       const secondary = rg["secondary-types"] || [];
       if (secondary.includes("Compilation") || secondary.includes("Interview") || secondary.includes("Audiobook")) {
         return false;
@@ -431,6 +524,8 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
 async function triggerDrift() {
   if (isSpinning) return;
 
+  previewAudioEl.pause();
+
   const eligibleCountries = getEligibleCountries();
   if (eligibleCountries.length === 0) {
     showStrictError(
@@ -448,6 +543,9 @@ async function triggerDrift() {
   noMatchAlert.classList.add("hidden");
   albumCard.classList.add("hidden");
   loadingState.classList.remove("hidden");
+
+  // Scroll immediately to the deck so user sees live coordinates locking in
+  revealResultsPanel();
 
   vinylDisc.classList.add("spinning");
   tonearm.classList.add("engaged");
@@ -545,6 +643,7 @@ function showStrictError(heading, message) {
   noMatchAlert.classList.remove("hidden");
   matchCounter.textContent = "0 Matching Records";
   matchCounter.classList.add("zero-matches");
+  revealResultsPanel();
 }
 
 function displayRecord(rec) {
@@ -585,6 +684,8 @@ function displayRecord(rec) {
   document.getElementById("mbLink").href = `https://musicbrainz.org/release-group/${rec.id}`;
 
   updateSaveButtonState();
+  revealResultsPanel();
+  loadAudioPreview(rec.artist, rec.title);
 }
 
 function updateSaveButtonState() {
@@ -696,11 +797,42 @@ function resetAllFilters() {
 countryLetterSelect.addEventListener("change", populateCountryDropdown);
 regionSelect.addEventListener("change", populateCountryDropdown);
 countrySelect.addEventListener("change", updateEligibilityStatus);
+artistLetterSelect.addEventListener("change", syncUrlParams);
+decadeSelect.addEventListener("change", syncUrlParams);
+genreSelect.addEventListener("change", syncUrlParams);
 
 resetFiltersBtn.addEventListener("click", resetAllFilters);
 alertResetBtn.addEventListener("click", resetAllFilters);
 driftBtn.addEventListener("click", triggerDrift);
 saveCrateBtn.addEventListener("click", addCurrentToCrate);
+
+shareRecordBtn.addEventListener("click", async () => {
+  syncUrlParams();
+  const shareUrl = window.location.href;
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    shareRecordBtn.innerHTML = "<span>✓ Link Copied!</span>";
+    setTimeout(() => {
+      shareRecordBtn.innerHTML = "<span>🔗 Share Filter</span>";
+    }, 2000);
+  } catch (e) {
+    prompt("Copy this shareable Record Drift link:", shareUrl);
+  }
+});
+
+previewPlayBtn.addEventListener("click", () => {
+  if (previewAudioEl.paused) {
+    previewAudioEl.play();
+    previewPlayBtn.textContent = "⏸ Pause Preview";
+  } else {
+    previewAudioEl.pause();
+    previewPlayBtn.textContent = "▶ Play 30s Preview";
+  }
+});
+
+previewAudioEl.addEventListener("ended", () => {
+  previewPlayBtn.textContent = "▶ Play 30s Preview";
+});
 
 document.addEventListener("keydown", e => {
   if (e.code === "Space" && document.activeElement.tagName !== "SELECT" && document.activeElement.tagName !== "BUTTON") {
@@ -764,3 +896,4 @@ cratesList.addEventListener("change", e => {
 initFilters();
 persistCrates();
 renderGlobeLoop();
+applyUrlParamsOnLoad();

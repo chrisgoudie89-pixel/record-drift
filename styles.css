@@ -23,6 +23,10 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--bg-deep);
   background-image:
@@ -127,6 +131,12 @@ body {
   border-radius: 14px;
   padding: 1.35rem;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.panel.highlight-pulse {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.28), 0 14px 34px rgba(0, 0, 0, 0.45);
 }
 
 .panel-header {
@@ -634,6 +644,44 @@ kbd {
   color: var(--text-secondary);
   padding: 0.2rem 0.55rem;
   border-radius: 6px;
+}
+
+/* 30-Second Audio Preview Bar */
+.preview-audio-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 1rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 8px;
+}
+
+.preview-play-btn {
+  background: var(--accent-cyan);
+  color: #070a12;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.preview-play-btn:hover {
+  opacity: 0.9;
+}
+
+.preview-track-name {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field-notes {
