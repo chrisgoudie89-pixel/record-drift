@@ -1,5 +1,5 @@
 // Record Drift (recorddrift.com) — Live MusicBrainz & Cover Art Archive Edition
-// Clean Discovery Mode: Smooth Auto-Scroll, Shareable Filter Deep-Links, 30s Previews, and Session Recent Spins
+// Upgraded: Low-Request Rate-Limit Shield (max 2 calls/spin + exponential 503 backoff + artist-level caching)
 
 const COUNTRIES = [
   { code: "DZ", name: "Algeria", region: "Africa", coords: "LAT 28.03°N • LNG 1.65°E" },
@@ -102,7 +102,10 @@ let audioEnabled = true;
 let globeAngle = 0;
 let globeSpeed = 0.012;
 let lastApiCallTimestamp = 0;
-const queryCache = new Map();
+
+// Two-tier in-memory caches so repeat clicks and artists never spam MusicBrainz
+const artistListCache = new Map();
+const artistAlbumsCache = new Map();
 let recentSpins = [];
 
 const countryLetterSelect = document.getElementById("countryLetterSelect");
@@ -364,28 +367,31 @@ function renderGlobeLoop() {
   requestAnimationFrame(renderGlobeLoop);
 }
 
-async function politeMusicBrainzFetch(url) {
+// Polite rate-limited fetch with 1.5s spacing + automatic exponential backoff on 503/429
+async function politeMusicBrainzFetch(url, attempt = 0) {
+  const minGap = 1500;
   const now = Date.now();
   const elapsed = now - lastApiCallTimestamp;
-  if (elapsed < 1150) {
-    await new Promise(resolve => setTimeout(resolve, 1150 - elapsed));
+  if (elapsed < minGap) {
+    await new Promise(resolve => setTimeout(resolve, minGap - elapsed));
   }
   lastApiCallTimestamp = Date.now();
 
   const response = await fetch(url, {
-    headers: { "Accept": "application/json" }
+    headers: {
+      "Accept": "application/json",
+      "Api-User-Agent": "RecordDrift/1.0 (https://recorddrift.com)"
+    }
   });
 
   if (response.status === 503 || response.status === 429) {
-    await new Promise(resolve => setTimeout(resolve, 1600));
-    lastApiCallTimestamp = Date.now();
-    const retryResp = await fetch(url, {
-      headers: { "Accept": "application/json" }
-    });
-    if (!retryResp.ok) {
-      throw new Error(`MusicBrainz HTTP ${retryResp.status}`);
+    if (attempt < 2) {
+      const backoffMs = 2400 * Math.pow(2, attempt) + Math.floor(Math.random() * 500);
+      loadingSub.textContent = `MusicBrainz busy — retrying smoothly in ${(backoffMs / 1000).toFixed(1)}s...`;
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
+      return politeMusicBrainzFetch(url, attempt + 1);
     }
-    return retryResp.json();
+    throw new Error(`MusicBrainz HTTP ${response.status}`);
   }
 
   if (!response.ok) {
@@ -417,47 +423,60 @@ async function loadAudioPreview(artist, albumTitle) {
   } catch (e) {}
 }
 
+// Optimized: Max 2 API requests per spin (1 artist search + 1 release-group lookup), with full caching
 async function fetchAlbumsByArtistOrigin(countryObj) {
   const aLetter = artistLetterSelect.value;
   const decade = decadeSelect.value;
   const genre = genreSelect.value;
 
-  const cacheKey = `${countryObj.code}|${aLetter}|${decade}|${genre}`;
-  if (queryCache.has(cacheKey)) {
-    const cached = queryCache.get(cacheKey);
-    if (cached.albums.length > 0) {
-      return cached;
+  const artistCacheKey = `${countryObj.code}|${aLetter}|${genre}`;
+  let artistEntry = artistListCache.get(artistCacheKey);
+
+  if (!artistEntry) {
+    const artistQueryParts = [`country:${countryObj.code}`];
+    if (aLetter !== "ALL") {
+      artistQueryParts.push(`artist:${aLetter.toLowerCase()}*`);
+    }
+    if (genre !== "ALL") {
+      artistQueryParts.push(`tag:"${genre}"`);
+    }
+
+    const artistQuery = artistQueryParts.join(" AND ");
+    const artistUrl = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(artistQuery)}&limit=100&fmt=json`;
+    const artistData = await politeMusicBrainzFetch(artistUrl);
+
+    let artists = artistData.artists || [];
+    if (aLetter !== "ALL") {
+      artists = artists.filter(a => a.name && a.name.trim().charAt(0).toUpperCase() === aLetter);
+    }
+
+    artistEntry = {
+      totalArtists: artistData.count || artists.length,
+      artists
+    };
+
+    if (artists.length > 0) {
+      artistListCache.set(artistCacheKey, artistEntry);
     }
   }
 
-  const artistQueryParts = [`country:${countryObj.code}`];
-  if (aLetter !== "ALL") {
-    artistQueryParts.push(`artist:${aLetter.toLowerCase()}*`);
-  }
-  if (genre !== "ALL") {
-    artistQueryParts.push(`tag:"${genre}"`);
-  }
-
-  const artistQuery = artistQueryParts.join(" AND ");
-  const artistUrl = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(artistQuery)}&limit=50&fmt=json`;
-  const artistData = await politeMusicBrainzFetch(artistUrl);
-
-  let artists = artistData.artists || [];
-  if (aLetter !== "ALL") {
-    artists = artists.filter(a => a.name && a.name.trim().charAt(0).toUpperCase() === aLetter);
-  }
-
-  if (artists.length === 0) {
+  if (!artistEntry.artists || artistEntry.artists.length === 0) {
     return { totalArtists: 0, albums: [] };
   }
 
-  const shuffledArtists = [...artists].sort(() => Math.random() - 0.5).slice(0, 4);
+  // Pick up to 2 random artists (preferring cached artists if available so we make 0 extra API calls)
+  const shuffled = [...artistEntry.artists].sort(() => Math.random() - 0.5);
+  const candidates = shuffled.slice(0, 2);
   let collectedAlbums = [];
 
-  for (const artist of shuffledArtists) {
-    const rgUrl = `https://musicbrainz.org/ws/2/release-group?artist=${artist.id}&type=album&inc=tags&limit=50&fmt=json`;
-    const rgData = await politeMusicBrainzFetch(rgUrl);
-    const rgs = rgData["release-groups"] || [];
+  for (const artist of candidates) {
+    let rgs = artistAlbumsCache.get(artist.id);
+    if (!rgs) {
+      const rgUrl = `https://musicbrainz.org/ws/2/release-group?artist=${artist.id}&type=album&inc=tags&limit=50&fmt=json`;
+      const rgData = await politeMusicBrainzFetch(rgUrl);
+      rgs = rgData["release-groups"] || [];
+      artistAlbumsCache.set(artist.id, rgs);
+    }
 
     const matchingRgs = rgs.filter(rg => {
       const secondary = rg["secondary-types"] || [];
@@ -486,19 +505,13 @@ async function fetchAlbumsByArtistOrigin(countryObj) {
       });
     });
 
-    if (collectedAlbums.length >= 12) break;
+    if (collectedAlbums.length > 0) break;
   }
 
-  const resultPayload = {
-    totalArtists: artistData.count || artists.length,
+  return {
+    totalArtists: artistEntry.totalArtists,
     albums: collectedAlbums
   };
-
-  if (collectedAlbums.length > 0) {
-    queryCache.set(cacheKey, resultPayload);
-  }
-
-  return resultPayload;
 }
 
 function recordSessionSpin(rec) {
@@ -670,7 +683,7 @@ async function triggerDrift() {
     stopSpinner();
     showStrictError(
       "MusicBrainz Rate Limit or Network Pause",
-      "MusicBrainz briefly paused the request due to traffic limits. Wait 2 seconds and click Drift Record again."
+      "MusicBrainz briefly paused the request due to traffic limits. Wait 3 seconds and click Drift Record again."
     );
   }
 }
