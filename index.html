@@ -57,10 +57,6 @@
           <span id="audioIcon">🔊</span>
           <span class="btn-label">Audio: ON</span>
         </button>
-        <button id="openCratesBtn" class="crates-btn">
-          <span>📦 My Crate</span>
-          <span id="crateBadge" class="badge">0</span>
-        </button>
       </div>
     </header>
 
@@ -235,9 +231,6 @@
           <p id="fieldNotes" class="field-notes"></p>
 
           <div class="card-actions">
-            <button id="saveCrateBtn" class="save-btn">
-              <span>+ Add to My Crate</span>
-            </button>
             <button id="shareRecordBtn" class="secondary-btn" title="Copy shareable link to this search">
               <span>🔗 Share Filter</span>
             </button>
@@ -256,29 +249,6 @@
       <span>Record Drift · Global Vinyl Discovery</span>
     </footer>
   </div>
-
-  <!-- MY CRATE DRAWER -->
-  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="cratesDrawer" class="crates-drawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div>
-        <h3>📦 My Discovery Crate</h3>
-        <p class="drawer-sub">Saved locally in your browser</p>
-      </div>
-      <button id="closeCratesBtn" class="icon-btn" aria-label="Close drawer">✕</button>
-    </div>
-
-    <div class="drawer-toolbar">
-      <select id="crateFilterSelect">
-        <option value="ALL">All Saved Records</option>
-        <option value="want">Want to Listen</option>
-        <option value="listened">Listened</option>
-      </select>
-      <button id="exportLogBtn" class="secondary-btn">Export .TXT</button>
-    </div>
-
-    <div id="cratesList" class="crates-list"></div>
-  </aside>
 
   <script src="app.js"></script>
 </body>

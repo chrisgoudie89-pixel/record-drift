@@ -1,5 +1,5 @@
 // Record Drift (recorddrift.com) — Live MusicBrainz & Cover Art Archive Edition
-// Upgraded: Smooth Auto-Scroll to Deck, Shareable Filter Deep-Links, and 30s Audio Previews
+// Clean Discovery Mode: Smooth Auto-Scroll to Deck, Shareable Filter Deep-Links, and 30s Audio Previews
 
 const COUNTRIES = [
   { code: "DZ", name: "Algeria", region: "Africa", coords: "LAT 28.03°N • LNG 1.65°E" },
@@ -103,7 +103,6 @@ let globeAngle = 0;
 let globeSpeed = 0.012;
 let lastApiCallTimestamp = 0;
 const queryCache = new Map();
-let savedCrates = JSON.parse(localStorage.getItem("recordDriftCrates") || "[]");
 
 const countryLetterSelect = document.getElementById("countryLetterSelect");
 const countrySelect = document.getElementById("countrySelect");
@@ -139,16 +138,6 @@ const previewAudioEl = document.getElementById("previewAudioEl");
 
 const audioToggleBtn = document.getElementById("audioToggleBtn");
 const audioIcon = document.getElementById("audioIcon");
-
-const openCratesBtn = document.getElementById("openCratesBtn");
-const closeCratesBtn = document.getElementById("closeCratesBtn");
-const cratesDrawer = document.getElementById("cratesDrawer");
-const drawerBackdrop = document.getElementById("drawerBackdrop");
-const crateBadge = document.getElementById("crateBadge");
-const crateFilterSelect = document.getElementById("crateFilterSelect");
-const exportLogBtn = document.getElementById("exportLogBtn");
-const cratesList = document.getElementById("cratesList");
-const saveCrateBtn = document.getElementById("saveCrateBtn");
 const shareRecordBtn = document.getElementById("shareRecordBtn");
 
 function revealResultsPanel(targetEl = resultsSection) {
@@ -669,103 +658,8 @@ function displayRecord(rec) {
   document.getElementById("discogsLink").href = `https://www.discogs.com/search/?q=${query}&type=release`;
   document.getElementById("mbLink").href = `https://musicbrainz.org/release-group/${rec.id}`;
 
-  updateSaveButtonState();
   revealResultsPanel(albumCard);
   loadAudioPreview(rec.artist, rec.title);
-}
-
-function updateSaveButtonState() {
-  if (!currentRecord) return;
-  const exists = savedCrates.some(item => item.id === currentRecord.id);
-  if (exists) {
-    saveCrateBtn.innerHTML = "<span>✓ Saved in My Crate</span>";
-  } else {
-    saveCrateBtn.innerHTML = "<span>+ Add to My Crate</span>";
-  }
-}
-
-function persistCrates() {
-  localStorage.setItem("recordDriftCrates", JSON.stringify(savedCrates));
-  crateBadge.textContent = savedCrates.length;
-  renderCratesList();
-  updateSaveButtonState();
-}
-
-function addCurrentToCrate() {
-  if (!currentRecord) return;
-  if (savedCrates.some(item => item.id === currentRecord.id)) return;
-
-  savedCrates.unshift({
-    ...currentRecord,
-    status: "want",
-    rating: 0,
-    savedAt: new Date().toISOString().split("T")[0]
-  });
-  persistCrates();
-}
-
-function renderCratesList() {
-  const filter = crateFilterSelect.value;
-  const filtered = savedCrates.filter(item => filter === "ALL" || item.status === filter);
-
-  if (filtered.length === 0) {
-    cratesList.innerHTML = `<p class="panel-hint" style="text-align:center;margin-top:2rem;">No records in this crate view yet.</p>`;
-    return;
-  }
-
-  cratesList.innerHTML = filtered.map(item => `
-    <div class="crate-item">
-      <div class="crate-item-top">
-        <div>
-          <div class="crate-item-title">${item.flag} ${item.title}</div>
-          <div class="crate-item-meta">${item.artist} • ${item.country} (${item.year})</div>
-        </div>
-        <button class="remove-crate-btn" data-id="${item.id}" title="Remove">Remove</button>
-      </div>
-      <div class="crate-controls">
-        <select class="status-select" data-id="${item.id}">
-          <option value="want" ${item.status === "want" ? "selected" : ""}>Want to Listen</option>
-          <option value="listened" ${item.status === "listened" ? "selected" : ""}>Listened</option>
-        </select>
-        <div>
-          ${[1, 2, 3, 4, 5].map(star => `
-            <button class="star-btn" data-id="${item.id}" data-star="${star}">
-              ${item.rating >= star ? "★" : "☆"}
-            </button>
-          `).join("")}
-        </div>
-      </div>
-    </div>
-  `).join("");
-}
-
-function exportListeningLog() {
-  if (savedCrates.length === 0) {
-    alert("Your crate is empty. Save at least one album before exporting.");
-    return;
-  }
-  const lines = [
-    "RECORD DRIFT (recorddrift.com) — LISTENING LOG",
-    `Exported: ${new Date().toLocaleDateString()}`,
-    "==================================================",
-    ""
-  ];
-
-  savedCrates.forEach((item, idx) => {
-    lines.push(`${idx + 1}. ${item.title} — ${item.artist}`);
-    lines.push(`   Origin: ${item.country} (${item.region}) | Year: ${item.year} | Genre: ${item.genre}`);
-    lines.push(`   Status: ${item.status === "listened" ? "Listened" : "Want to Listen"} | Rating: ${item.rating}/5`);
-    lines.push(`   MusicBrainz: https://musicbrainz.org/release-group/${item.id}`);
-    lines.push("");
-  });
-
-  const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "record-drift-log.txt";
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 function resetAllFilters() {
@@ -788,7 +682,6 @@ genreSelect.addEventListener("change", syncUrlParams);
 resetFiltersBtn.addEventListener("click", resetAllFilters);
 alertResetBtn.addEventListener("click", resetAllFilters);
 driftBtn.addEventListener("click", triggerDrift);
-saveCrateBtn.addEventListener("click", addCurrentToCrate);
 
 shareRecordBtn.addEventListener("click", async () => {
   syncUrlParams();
@@ -832,51 +725,6 @@ audioToggleBtn.addEventListener("click", () => {
   audioToggleBtn.querySelector(".btn-label").textContent = audioEnabled ? "Audio: ON" : "Audio: OFF";
 });
 
-openCratesBtn.addEventListener("click", () => {
-  cratesDrawer.classList.add("open");
-  cratesDrawer.setAttribute("aria-hidden", "false");
-  drawerBackdrop.classList.remove("hidden");
-});
-
-function closeDrawer() {
-  cratesDrawer.classList.remove("open");
-  cratesDrawer.setAttribute("aria-hidden", "true");
-  drawerBackdrop.classList.add("hidden");
-}
-
-closeCratesBtn.addEventListener("click", closeDrawer);
-drawerBackdrop.addEventListener("click", closeDrawer);
-crateFilterSelect.addEventListener("change", renderCratesList);
-exportLogBtn.addEventListener("click", exportListeningLog);
-
-cratesList.addEventListener("click", e => {
-  const removeBtn = e.target.closest(".remove-crate-btn");
-  if (removeBtn) {
-    const id = removeBtn.dataset.id;
-    savedCrates = savedCrates.filter(item => item.id !== id);
-    persistCrates();
-    return;
-  }
-
-  const starBtn = e.target.closest(".star-btn");
-  if (starBtn) {
-    const id = starBtn.dataset.id;
-    const star = Number(starBtn.dataset.star);
-    savedCrates = savedCrates.map(item => item.id === id ? { ...item, rating: star } : item);
-    persistCrates();
-  }
-});
-
-cratesList.addEventListener("change", e => {
-  if (e.target.classList.contains("status-select")) {
-    const id = e.target.dataset.id;
-    const status = e.target.value;
-    savedCrates = savedCrates.map(item => item.id === id ? { ...item, status } : item);
-    persistCrates();
-  }
-});
-
 initFilters();
-persistCrates();
 renderGlobeLoop();
 applyUrlParamsOnLoad();

@@ -51,7 +51,6 @@ body {
   gap: 1.25rem;
 }
 
-/* HEADER */
 .top-header {
   display: flex;
   flex-wrap: wrap;
@@ -124,7 +123,6 @@ body {
   gap: 0.65rem;
 }
 
-/* PANELS */
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
@@ -183,7 +181,6 @@ body {
   border-color: rgba(239, 68, 68, 0.45);
 }
 
-/* FILTERS GRID */
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
@@ -222,11 +219,8 @@ select:focus {
   border-color: var(--accent-gold);
 }
 
-/* BUTTONS */
 .icon-btn,
-.crates-btn,
-.secondary-btn,
-.save-btn {
+.secondary-btn {
   background: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);
@@ -242,20 +236,9 @@ select:focus {
 }
 
 .icon-btn:hover,
-.crates-btn:hover,
 .secondary-btn:hover {
   border-color: var(--accent-gold);
   background: #1e293b;
-}
-
-.badge {
-  background: var(--accent-gold);
-  color: #070a12;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.72rem;
-  padding: 0.08rem 0.45rem;
-  border-radius: 999px;
 }
 
 .text-btn {
@@ -271,7 +254,6 @@ select:focus {
   color: var(--text-primary);
 }
 
-/* SECTION 2: VISUALIZER */
 .visualizer-panel {
   background: linear-gradient(180deg, #101726 0%, #0b101c 100%);
   border-color: var(--border-gold);
@@ -349,7 +331,6 @@ select:focus {
   display: block;
 }
 
-/* Tonearm */
 .tonearm {
   position: absolute;
   top: 6px;
@@ -449,7 +430,6 @@ kbd {
   color: var(--text-secondary);
 }
 
-/* SECTION 3: RESULT PRESENTATION CARD */
 .state-box {
   text-align: center;
   padding: 2rem 1rem;
@@ -646,7 +626,6 @@ kbd {
   border-radius: 6px;
 }
 
-/* 30-Second Audio Preview Bar */
 .preview-audio-box {
   display: flex;
   align-items: center;
@@ -699,16 +678,6 @@ kbd {
   gap: 0.55rem;
 }
 
-.save-btn {
-  background: rgba(16, 185, 129, 0.14);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #6ee7b7;
-}
-
-.save-btn:hover {
-  background: rgba(16, 185, 129, 0.24);
-}
-
 .ext-link {
   text-decoration: none;
   font-size: 0.82rem;
@@ -725,7 +694,6 @@ kbd {
   border-color: var(--accent-cyan);
 }
 
-/* FOOTER */
 .app-footer {
   display: flex;
   flex-wrap: wrap;
@@ -740,113 +708,4 @@ kbd {
 .app-footer a {
   color: var(--accent-cyan);
   text-decoration: none;
-}
-
-/* CRATES DRAWER */
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 40;
-}
-
-.crates-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 100%;
-  max-width: 420px;
-  height: 100vh;
-  background: var(--bg-panel);
-  border-left: 1px solid var(--border-gold);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.28s ease;
-}
-
-.crates-drawer.open {
-  transform: translateX(0);
-}
-
-.drawer-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.drawer-sub {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.drawer-toolbar {
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.crates-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.crate-item {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.crate-item-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.crate-item-title {
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--text-primary);
-}
-
-.crate-item-meta {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.crate-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.25rem;
-}
-
-.star-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-  color: var(--accent-gold);
-}
-
-.remove-crate-btn {
-  background: none;
-  border: none;
-  color: #fca5a5;
-  font-size: 0.76rem;
-  cursor: pointer;
 }
